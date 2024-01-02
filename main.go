@@ -1,14 +1,47 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/sheets/v4"
 )
 
+// main
 func main() {
-	token := "tokens"
+	ctx := context.Background()
+	data, err := os.ReadFile("./siinqee-410008-dce8f3f1a0ca.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	conf, err := google.JWTConfigFromJSON(data, sheets.SpreadsheetsScope)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	srv, err := sheets.New(conf.Client(ctx))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	spreadsheetId := "1upczoYlOPL2tKg_diY8Q8ktbTdEQ_pn3V_7QbyOIP4Y"
+	rng := "Sheet1!A1:B2"
+
+	resp, err := srv.Spreadsheets.Values.Get(spreadsheetId, rng).Do()
+	if err != nil {
+		log.Fatalf("Unable to retrieve data from sheet: %v", err)
+	}
+
+	if len(resp.Values) > 0 {
+		fmt.Println("Sheet data:")
+		fmt.Println(resp.Values)
+	}
+
+	token := ""
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		log.Panic(err)
@@ -51,11 +84,20 @@ func main() {
 				if location != nil {
 					if isSameUser && isInEthiopia {
 						userMessage := update.Message.Text
+						// add data to sheet
+						var vr sheets.ValueRange
+						mapCoordination := fmt.Sprintf("%f,%f", location.Latitude, location.Longitude)
+						branch := userMessage
+						vr.Values = append(vr.Values, []interface{}{branch, mapCoordination})
+						_, err := srv.Spreadsheets.Values.Append(spreadsheetId, rng, &vr).ValueInputOption("RAW").Do()
+						if err != nil {
+							log.Fatalf("Unable to retrieve data from sheet: %v", err)
+						}
 						botReply := fmt.Sprintf("Approved✅\n\nLatitude: %f\nLongitude: %f\nBranch: %s", location.Latitude, location.Longitude, userMessage)
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, botReply)
 						msg.ReplyToMessageID = update.Message.MessageID
 						bot.Send(msg)
-					} else {
+					} else if isSameUser && !isInEthiopia {
 						botReply := "❌Rejected❌\n This location is not in Ethiopia. Please send a location in Ethiopia"
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, botReply)
 						msg.ReplyToMessageID = update.Message.MessageID
