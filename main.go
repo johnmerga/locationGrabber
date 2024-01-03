@@ -7,14 +7,50 @@ import (
 	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/joho/godotenv"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 )
 
+type LanguageOptions struct {
+	wrongLocation struct {
+		eng string
+		orm string
+		amh string
+	}
+}
+
 // main
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	token := os.Getenv("TELEGRAM_API_KEY")
+	gkey := os.Getenv("GOOGLE_API_JSON")
+	if token == "" || gkey == "" {
+		if token == "" {
+			fmt.Println("TELEGRAM_API_KEY is missing")
+		}
+		if gkey == "" {
+			fmt.Println("GOOGLE_API_KEY is missing")
+		}
+		os.Exit(1)
+	}
+	chooseLng := LanguageOptions{
+		wrongLocation: struct {
+			eng string
+			orm string
+			amh string
+		}{
+			eng: "❌Rejected!❌\n This location is not in Ethiopia. only locations in Ethiopia are accepted. Please send again",
+			orm: "❌Hin fudhatamne!❌\nBakki kun Itoophiyaa keessa hin jiru. bakkeewwan Itoophiyaa keessa jiran qofatu fudhatama qaba. Irra deebi’uun nuuf ergaa",
+			amh: "❌ውድቅ ተደርጓል!❌\nይህ ቦታ ኢትዮጵያ ውስጥ አይደለም፣ ኢትዮጵያ ውስጥ ያሉ ቦታዎች ብቻ ተቀባይነት አላቸው። እባኮትን በድጋሚ ላኩ",
+		},
+	}
+
 	ctx := context.Background()
-	data, err := os.ReadFile("./siinqee-410008-dce8f3f1a0ca.json")
+	data, err := os.ReadFile(gkey)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -22,8 +58,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	srv, err := sheets.New(conf.Client(ctx))
+	srv, err := sheets.NewService(ctx, option.WithHTTPClient(conf.Client(ctx)))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,7 +76,6 @@ func main() {
 		fmt.Println(resp.Values)
 	}
 
-	token := ""
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		log.Panic(err)
@@ -84,11 +118,14 @@ func main() {
 				if location != nil {
 					if isSameUser && isInEthiopia {
 						userMessage := update.Message.Text
+						username := update.Message.From.UserName
+						userFullName := fmt.Sprintf("%s %s", update.Message.From.FirstName, update.Message.From.LastName)
+
 						// add data to sheet
 						var vr sheets.ValueRange
 						mapCoordination := fmt.Sprintf("%f,%f", location.Latitude, location.Longitude)
-						branch := userMessage
-						vr.Values = append(vr.Values, []interface{}{branch, mapCoordination})
+						branch := fmt.Sprintf("Siinqee Bank %s", userMessage)
+						vr.Values = append(vr.Values, []interface{}{branch, mapCoordination, userFullName, username})
 						_, err := srv.Spreadsheets.Values.Append(spreadsheetId, rng, &vr).ValueInputOption("RAW").Do()
 						if err != nil {
 							log.Fatalf("Unable to retrieve data from sheet: %v", err)
@@ -98,7 +135,7 @@ func main() {
 						msg.ReplyToMessageID = update.Message.MessageID
 						bot.Send(msg)
 					} else if isSameUser && !isInEthiopia {
-						botReply := "❌Rejected❌\n This location is not in Ethiopia. Please send a location in Ethiopia"
+						botReply := fmt.Sprintf("%s\n\n%s\n\n%s", chooseLng.wrongLocation.eng, chooseLng.wrongLocation.orm, chooseLng.wrongLocation.amh)
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, botReply)
 						msg.ReplyToMessageID = update.Message.MessageID
 						bot.Send(msg)
