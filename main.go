@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
@@ -112,10 +114,34 @@ func main() {
 			}
 			// chech if the message is Replyied to a message
 			if (update.Message.Chat.Type == "group" || update.Message.Chat.Type == "supergroup") && update.Message.ReplyToMessage != nil {
+
 				location := update.Message.ReplyToMessage.Location
 				isSameUser := update.Message.From.ID == update.Message.ReplyToMessage.From.ID
 				isInEthiopia := isEthiopia(location)
 				if location != nil {
+
+					isWorkingHrs, currentTime, err := isWorkingHours()
+					if err != nil {
+						log.Fatal(err)
+					}
+					humanTime := humanDate(currentTime)
+					fmt.Printf("Human time: %s\n", humanTime)
+					if strings.Contains(humanTime, "Thu") {
+						rpl := fmt.Sprintf("Today is Sunday, we are closed. Please send your location tomorrow between 8:00 AM and 5:00 PM")
+						msg := tgbotapi.NewMessage(update.Message.Chat.ID, rpl)
+						msg.ReplyToMessageID = update.Message.MessageID
+						bot.Send(msg)
+						return
+					}
+
+					if !isWorkingHrs {
+						rpl := fmt.Sprintf("We are closed. Please send your location tomorrow between 8:00 AM and 5:00 PM")
+						msg := tgbotapi.NewMessage(update.Message.Chat.ID, rpl)
+						msg.ReplyToMessageID = update.Message.MessageID
+						bot.Send(msg)
+						return
+					}
+
 					if isSameUser && isInEthiopia {
 						userMessage := update.Message.Text
 						username := update.Message.From.UserName
@@ -156,4 +182,42 @@ func isEthiopia(location *tgbotapi.Location) bool {
 		return true
 	}
 	return false
+}
+
+// chech working hours
+func isWorkingHours() (bool, time.Time, error) {
+	currentTime, err := convertFranceToEastAfricaTime()
+	if err != nil {
+		return false, time.Time{}, err
+	}
+	if currentTime.Hour() >= 8 && currentTime.Hour() <= 17 {
+		return true, currentTime, nil
+	} else {
+		return false, currentTime, nil
+	}
+}
+
+// convert france time to east africa time
+func convertFranceToEastAfricaTime() (time.Time, error) {
+	// Example UTC date time
+	utc := time.Now().UTC()
+
+	// Get EAT location
+	loc, err := time.LoadLocation("Africa/Nairobi")
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	// Convert UTC to EAT
+	eat := utc.In(loc)
+	return eat, nil
+
+}
+
+func humanDate(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	// Convert the time to UTC before formatting it
+	return t.UTC().Format("Sun 02 Jan 2006 - 15:04")
 }
