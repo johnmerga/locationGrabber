@@ -1,8 +1,10 @@
-version: "3.9"
+version: "3"
 services:
-  go_bot:
+  go:
+    container_name: go_bot
     build:
-      dockerfile: Dockerfile
       context: .
-    volumes:
-      - .:/opt/app/api
+      target: prod
+    image: go_bot:prod
+    env_file:
+      - .env

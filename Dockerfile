@@ -1,26 +1,18 @@
-# Start from the latest Golang base image
-FROM golang:latest
-
-# Add Maintainer info 
-LABEL maintainer="john johnmergaalex@gmail.com"
-
-# Set the Current Working Directory inside the container
-WORKDIR /app
-
-# Copy go mod and sum files
-COPY go.mod go.sum ./
-
-# Download dependencies
+FROM golang:alpine3.19 as dev
+COPY . /go/src/johnmerga/locationGrabber
+WORKDIR /go/src/johnmerga/locationGrabber
+COPY go.mod ./
+COPY go.sum ./
 RUN go mod download
+COPY . .
+RUN go install github.com/cosmtrek/air@latest
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -gcflags "all=-N -l" -o /server
+CMD ["air", "-c", ".air.toml"]
+# CMD ["go","run","./main.go"]
 
-# Copy the source from the current directory to the Working Directory inside the container
-COPY . . 
-
-# Install air for live reloading
-RUN curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
-
-# Expose port 
-EXPOSE 8080
-
-# Start air
-CMD ["air"]
+## Deploy
+FROM alpine:latest as prod
+RUN mkdir /data
+COPY --from=dev /server ./
+COPY ./gkey.json ./
+CMD ["./server"]
