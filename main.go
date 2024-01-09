@@ -9,47 +9,41 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/joho/godotenv"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 )
 
+type languages struct {
+	eng string
+	orm string
+	amh string
+}
 type LanguageOptions struct {
-	wrongLocation struct {
-		eng string
-		orm string
-		amh string
-	}
+	wrongLocation languages
+	wrongTime     languages
+	holyday       languages
 }
 
 // main
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	fmt.Printf("Current time: %s\n", time.Now().UTC())
 	token := os.Getenv("TELEGRAM_API_KEY")
 	gkey := os.Getenv("GOOGLE_API_JSON")
-	if token == "" || gkey == "" {
+	spreadsheetId := os.Getenv("SPREADSHEET_ID")
+	if token == "" || gkey == "" || spreadsheetId == "" {
 		if token == "" {
 			fmt.Println("TELEGRAM_API_KEY is missing")
 		}
 		if gkey == "" {
 			fmt.Println("GOOGLE_API_KEY is missing")
 		}
+		if spreadsheetId == "" {
+			fmt.Println("SPREADSHEET_ID is missing")
+		}
 		os.Exit(1)
 	}
-	chooseLng := LanguageOptions{
-		wrongLocation: struct {
-			eng string
-			orm string
-			amh string
-		}{
-			eng: "❌Rejected!❌\n This location is not in Ethiopia. only locations in Ethiopia are accepted. Please send again",
-			orm: "❌Hin fudhatamne!❌\nBakki kun Itoophiyaa keessa hin jiru. bakkeewwan Itoophiyaa keessa jiran qofatu fudhatama qaba. Irra deebi’uun nuuf ergaa",
-			amh: "❌ውድቅ ተደርጓል!❌\nይህ ቦታ ኢትዮጵያ ውስጥ አይደለም፣ ኢትዮጵያ ውስጥ ያሉ ቦታዎች ብቻ ተቀባይነት አላቸው። እባኮትን በድጋሚ ላኩ",
-		},
-	}
+	chooseLng := getLang()
 
 	ctx := context.Background()
 	data, err := os.ReadFile(gkey)
@@ -65,7 +59,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	spreadsheetId := "1upczoYlOPL2tKg_diY8Q8ktbTdEQ_pn3V_7QbyOIP4Y"
 	rng := "Sheet1!A1:B2"
 
 	resp, err := srv.Spreadsheets.Values.Get(spreadsheetId, rng).Do()
@@ -123,19 +116,20 @@ func main() {
 					isWorkingHrs, currentTime, err := isWorkingHours()
 					if err != nil {
 						log.Fatal(err)
+						continue
 					}
 					humanTime := humanDate(currentTime)
 					fmt.Printf("Human time: %s\n", humanTime)
-					if strings.Contains(humanTime, "Thu") {
-						rpl := fmt.Sprintf("Today is Sunday, we are closed. Please send your location tomorrow between 8:00 AM and 5:00 PM")
+					if strings.Contains(humanTime, "Sun") {
+						rpl := fmt.Sprintf("%s\n\n%s\n\n%s", chooseLng.holyday.eng, chooseLng.holyday.orm, chooseLng.holyday.amh)
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, rpl)
 						msg.ReplyToMessageID = update.Message.MessageID
 						bot.Send(msg)
-						return
+						continue
 					}
 
 					if !isWorkingHrs {
-						rpl := fmt.Sprintf("We are closed. Please send your location tomorrow between 8:00 AM and 5:00 PM")
+						rpl := fmt.Sprintf("%s\n\n%s\n\n%s", chooseLng.wrongTime.eng, chooseLng.wrongTime.orm, chooseLng.wrongTime.amh)
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, rpl)
 						msg.ReplyToMessageID = update.Message.MessageID
 						bot.Send(msg)
@@ -219,5 +213,38 @@ func humanDate(t time.Time) string {
 		return ""
 	}
 	// Convert the time to UTC before formatting it
-	return t.UTC().Format("Sun 02 Jan 2006 - 15:04")
+	return t.UTC().Format("Tue 02 Jan 2006 - 15:04")
+}
+
+func getLang() *LanguageOptions {
+	chooseLng := LanguageOptions{
+		wrongLocation: struct {
+			eng string
+			orm string
+			amh string
+		}{
+			eng: "❌Rejected!❌\n This location is not in Ethiopia. only locations in Ethiopia are accepted. Please send again",
+			orm: "❌Hin fudhatamne!❌\nBakki kun Itoophiyaa keessa hin jiru. bakkeewwan Itoophiyaa keessa jiran qofatu fudhatama qaba. Irra deebi’uun nuuf ergaa",
+			amh: "❌ውድቅ ተደርጓል!❌\nይህ ቦታ ኢትዮጵያ ውስጥ አይደለም፣ ኢትዮጵያ ውስጥ ያሉ ቦታዎች ብቻ ተቀባይነት አላቸው። እባኮትን በድጋሚ ላኩ",
+		},
+		wrongTime: struct {
+			eng string
+			orm string
+			amh string
+		}{
+			eng: "Sorry, You can only send your location between 8:00 AM and 5:00 PM",
+			orm: "Dhiifama, ganama sa'aatii 2:00 hanga galgala sa'aatii 11:00 gidduutti qofa Locationi erguu dandeessu",
+			amh: "ይቅርታ፣ Location መላክ የሚችሉት ከጠዋቱ 2፡00 እስከ ምሽቱ 11፡00 ሰዓት ብቻ ነው።",
+		},
+		holyday: struct {
+			eng string
+			orm string
+			amh string
+		}{
+			eng: "Sorry, you can't send your location today. Please share your location from Monday to Saturday between 8:00 AM and 5:00 PM by being at your branch",
+			orm: "Dhiifama, har'a Locationi erguu hin dandeessan. Maaloo bakka jirtan Isniina hanga Dilbataatti sa'aatii 2:00 AM hanga 1:00 PM gidduutti damee keessan irratti argamuun nuuf qoodaa",
+			amh: "ይቅርታ፣ ዛሬ Location መላክ አትችልም። እባኮትን ከሰኞ እስከ ቅዳሜ ከጠዋቱ 2፡00 እስከ 11፡00 ሰአት ባለው ጊዜ ውስጥ በቅርንጫፍዎ በመገኘት ያካፍሉ።",
+		},
+	}
+	return &chooseLng
 }
