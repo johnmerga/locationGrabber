@@ -1,0 +1,15 @@
+.env*
+.git
+Dockerfile
+.dockerignore
+.docker-compose*
+.gitignore
+.vscode
+docker-compose.*
+README.md
+logs
+.vscode
+.env
+./tmp
+tmp
+Makefile
