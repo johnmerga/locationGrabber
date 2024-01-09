@@ -9,19 +9,19 @@
 <h1 align="center">LocationGrabber Telegram Bot</h1>
 
 <p align="center">
-  <img alt="Github top language" src="https://img.shields.io/github/languages/top/johnmerg/locationgrabber?color=56BEB8">
+  <img alt="Github top language" src="https://img.shields.io/github/languages/top/johnmerga/locationgrabber?color=56BEB8">
 
-  <img alt="Github language count" src="https://img.shields.io/github/languages/count/johnmerg/locationgrabber?color=56BEB8">
+  <img alt="Github language count" src="https://img.shields.io/github/languages/count/johnmerga/locationgrabber?color=56BEB8">
 
-  <img alt="Repository size" src="https://img.shields.io/github/repo-size/johnmerg/locationgrabber?color=56BEB8">
+  <img alt="Repository size" src="https://img.shields.io/github/repo-size/johnmerga/locationgrabber?color=56BEB8">
 
-  <img alt="License" src="https://img.shields.io/github/license/johnmerg/locationgrabber?color=56BEB8">
+  <img alt="License" src="https://img.shields.io/github/license/johnmerga/locationgrabber?color=56BEB8">
 
-  <!-- <img alt="Github issues" src="https://img.shields.io/github/issues/johnmerg/locationgrabber?color=56BEB8" /> -->
+  <!-- <img alt="Github issues" src="https://img.shields.io/github/issues/johnmerga/locationgrabber?color=56BEB8" /> -->
 
-  <!-- <img alt="Github forks" src="https://img.shields.io/github/forks/johnmerg/locationgrabber?color=56BEB8" /> -->
+  <!-- <img alt="Github forks" src="https://img.shields.io/github/forks/johnmerga/locationgrabber?color=56BEB8" /> -->
 
-  <!-- <img alt="Github stars" src="https://img.shields.io/github/stars/johnmerg/locationgrabber?color=56BEB8" /> -->
+  <!-- <img alt="Github stars" src="https://img.shields.io/github/stars/johnmerga/locationgrabber?color=56BEB8" /> -->
 </p>
 
 <!-- Status -->
@@ -39,7 +39,7 @@
   <a href="#white_check_mark-requirements">Requirements</a> &#xa0; | &#xa0;
   <a href="#checkered_flag-starting">Starting</a> &#xa0; | &#xa0;
   <a href="#memo-license">License</a> &#xa0; | &#xa0;
-  <a href="https://github.com/johnmerg" target="_blank">Author</a>
+  <a href="https://github.com/johnmerga" target="_blank">Author</a>
 </p>
 
 <br>
@@ -78,7 +78,7 @@ Before starting 🏁 , you need to have [Git](https://git-scm.com), [Go](https:/
 
 ```bash
 # Clone this project
-$ git clone https://github.com/johnmerg/locationgrabber
+$ git clone https://github.com//locationGrabber
 
 # Access
 $ cd locationgrabber
@@ -99,7 +99,7 @@ $ docker-compose up -d
 
 This project is under license from MIT. For more details, see the [LICENSE](LICENSE.md) file.
 
-Made with :heart: by <a href="https://github.com/johnmerg" target="_blank">John Merga</a>
+Made with :heart: by <a href="https://github.com/johnmerga" target="_blank">John Merga</a>
 
 &#xa0;
 
