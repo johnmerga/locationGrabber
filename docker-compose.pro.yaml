@@ -1,6 +1,6 @@
 version: "3"
 services:
   go:
-    image: johnmerga/location-grabber-bot:v1.0.0
+    image: johnmerga/location-grabber-bot:v1.2.0
     env_file:
       - .env
