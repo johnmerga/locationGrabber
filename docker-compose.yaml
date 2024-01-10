@@ -1,6 +1,10 @@
 version: "3"
 services:
   go:
-    image: johnmerga/location-grabber-bot:v1.0.0
+    container_name: go_bot
+    build:
+      context: .
+      target: prod
+    image: go_bot:prod
     env_file:
       - .env
