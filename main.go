@@ -27,7 +27,8 @@ type LanguageOptions struct {
 
 // main
 func main() {
-	fmt.Printf("Current time: %s\n", time.Now().UTC())
+
+	fmt.Printf("\n\n\nDocker time: %s\n\n\n", time.Now().UTC())
 	token := os.Getenv("TELEGRAM_API_KEY")
 	gkey := os.Getenv("GOOGLE_API_JSON")
 	spreadsheetId := os.Getenv("SPREADSHEET_ID")
@@ -119,7 +120,7 @@ func main() {
 						continue
 					}
 					humanTime := humanDate(currentTime)
-					fmt.Printf("Human time: %s\n", humanTime)
+					fmt.Printf("\n\n\nCurrent time: %s\n\n\n", humanTime)
 					if strings.Contains(humanTime, "Sun") {
 						rpl := fmt.Sprintf("%s\n\n%s\n\n%s", chooseLng.holyday.eng, chooseLng.holyday.orm, chooseLng.holyday.amh)
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, rpl)
@@ -133,7 +134,7 @@ func main() {
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, rpl)
 						msg.ReplyToMessageID = update.Message.MessageID
 						bot.Send(msg)
-						return
+						continue
 					}
 
 					if isSameUser && isInEthiopia {
@@ -194,7 +195,7 @@ func isWorkingHours() (bool, time.Time, error) {
 // convert france time to east africa time
 func convertFranceToEastAfricaTime() (time.Time, error) {
 	// Example UTC date time
-	utc := time.Now().UTC()
+	now := time.Now()
 
 	// Get EAT location
 	loc, err := time.LoadLocation("Africa/Nairobi")
@@ -203,7 +204,7 @@ func convertFranceToEastAfricaTime() (time.Time, error) {
 	}
 
 	// Convert UTC to EAT
-	eat := utc.In(loc)
+	eat := now.In(loc)
 	return eat, nil
 
 }
@@ -213,7 +214,7 @@ func humanDate(t time.Time) string {
 		return ""
 	}
 	// Convert the time to UTC before formatting it
-	return t.UTC().Format("Tue 02 Jan 2006 - 15:04")
+	return t.Format("Tue 02 Jan 2006 - 15:04")
 }
 
 func getLang() *LanguageOptions {
