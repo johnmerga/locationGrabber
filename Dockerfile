@@ -14,7 +14,7 @@ CMD ["air", "-c", ".air.toml"]
 # CMD ["go","run","./main.go"]
 
 ## Deploy
-FROM alpine:latest as prod
+FROM scratch as prod
 # timezone
 ADD https://github.com/golang/go/raw/master/lib/time/zoneinfo.zip /zoneinfo.zip
 ENV ZONEINFO /zoneinfo.zip
