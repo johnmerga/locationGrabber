@@ -90,9 +90,9 @@ $ docker-compose -v
 $ cp .env.example .env
 # save your google cloud platform api key file as gkey.json
 # start docker containers
-$ docker-compose up -d
+$ docker-compose -f docker-compose.prod.yml up -d
+# have fun
 
-# The server will initialize in the <http://localhost:3000>
 ```
 
 ## License
