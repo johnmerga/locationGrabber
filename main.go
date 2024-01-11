@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -15,6 +16,8 @@ import (
 )
 
 func main() {
+	debug := flag.Bool("debug", false, "debug")
+	flag.Parse()
 	fmt.Printf("\n\n\nDocker time: %s\n\n\n", humanDate(time.Now().UTC()))
 	token := os.Getenv("TELEGRAM_API_KEY")
 	gkey := os.Getenv("GOOGLE_API_JSON")
@@ -64,7 +67,7 @@ func main() {
 		log.Panic(err)
 	}
 
-	bot.Debug = true
+	bot.Debug = *debug
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
@@ -91,7 +94,6 @@ func main() {
 			}
 			// chech if the message is Replyied to a message
 			if (update.Message.Chat.Type == "group" || update.Message.Chat.Type == "supergroup") && update.Message.ReplyToMessage != nil {
-
 				location := update.Message.ReplyToMessage.Location
 				isSameUser := update.Message.From.ID == update.Message.ReplyToMessage.From.ID
 				isInEthiopia := isEthiopia(location)

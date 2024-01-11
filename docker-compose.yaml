@@ -6,5 +6,7 @@ services:
       context: .
       target: prod
     image: go_bot:prod
+    volumes:
+      - ./gkey.json:/gkey.json:ro
     env_file:
       - .env

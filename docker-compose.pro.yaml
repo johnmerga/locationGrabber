@@ -1,6 +1,8 @@
 version: "3"
 services:
   go:
-    image: johnmerga/location-grabber-bot:v1.3.0
+    image: johnmerga/location-grabber-bot:latest
+    volumes:
+      - ./gkey.json:/gkey.json:ro
     env_file:
       - .env
