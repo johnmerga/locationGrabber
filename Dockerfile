@@ -1,8 +1,9 @@
+## for future reference
 FROM golang:alpine3.19 as dev
-# binary will be $(go env GOPATH)/bin/air
+# create user and group for bot
+RUN addgroup -S botgroup && adduser -S botuser -G botgroup
+# air library for hot reloading in dev
 RUN curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
-
-# or install it into ./bin/
 # RUN curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh | sh -s
 WORKDIR /go/src/johnmerga/locationGrabber
 COPY go.mod ./
@@ -18,6 +19,9 @@ FROM scratch as prod
 # timezone
 ADD https://github.com/golang/go/raw/master/lib/time/zoneinfo.zip /zoneinfo.zip
 ENV ZONEINFO /zoneinfo.zip
+# since we are using scratch we need to add certs and user from alpine
+COPY --from=dev /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=dev /server ./
-COPY ./gkey.json ./
+COPY --from=dev /etc/passwd /etc/passwd
+USER botuser
 CMD ["./server"]
