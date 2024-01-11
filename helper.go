@@ -42,6 +42,25 @@ func isWorkingHours() (bool, time.Time, error) {
 	}
 }
 
+// convert france time to east africa time
+func convertFranceToEastAfricaTime() (time.Time, error) {
+	// Get EAT location
+	loc, err := time.LoadLocation("Africa/Nairobi")
+	if err != nil {
+		return time.Time{}, err
+	}
+	eat := time.Now().In(loc)
+	return eat, nil
+}
+
+func humanDate(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	format := "Mon 02 Jan 2006 - 15:04:05"
+	return t.Format(format)
+}
+
 func getLang() *LanguageOptions {
 	chooseLng := LanguageOptions{
 		wrongLocation: struct {
