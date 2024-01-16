@@ -6,6 +6,8 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+var validUserNames = []string{"john_merga", "Tintade", "sami_mersha", "gh223223", "benionion", "Yblnr"}
+
 type languages struct {
 	eng string
 	orm string
@@ -92,4 +94,31 @@ func getLang() *LanguageOptions {
 		},
 	}
 	return &chooseLng
+}
+func isAdmin(username string) bool {
+	for _, adminUsername := range validUserNames {
+		if username == adminUsername {
+			return true
+		}
+	}
+	return false
+}
+
+// is group admin
+func isGroupAdmin(bot *tgbotapi.BotAPI, chatID int64, userID int64) bool {
+	isAdmin := false
+	admins, err := bot.GetChatAdministrators(tgbotapi.ChatAdministratorsConfig{
+		ChatConfig: tgbotapi.ChatConfig{
+			ChatID: chatID,
+		},
+	})
+	if err != nil {
+		return false
+	}
+	for _, admin := range admins {
+		if admin.User.ID == userID {
+			isAdmin = true
+		}
+	}
+	return isAdmin
 }

@@ -96,9 +96,8 @@ func main() {
 			if (update.Message.Chat.Type == "group" || update.Message.Chat.Type == "supergroup") && update.Message.ReplyToMessage != nil {
 				location := update.Message.ReplyToMessage.Location
 				isSameUser := update.Message.From.ID == update.Message.ReplyToMessage.From.ID
-				isInEthiopia := isEthiopia(location)
 				if location != nil {
-
+					isInEthiopia := isEthiopia(location)
 					isWorkingHrs, currentTime, err := isWorkingHours()
 					if err != nil {
 						log.Fatal(err)
@@ -121,8 +120,9 @@ func main() {
 						bot.Send(msg)
 						continue
 					}
+					isGroupAdmin := isGroupAdmin(bot, update.Message.Chat.ID, update.Message.From.ID)
 
-					if isSameUser && isInEthiopia {
+					if isSameUser && isInEthiopia || (isGroupAdmin && isInEthiopia) {
 						userMessage := update.Message.Text
 						username := update.Message.From.UserName
 						userFullName := fmt.Sprintf("%s %s", update.Message.From.FirstName, update.Message.From.LastName)
@@ -136,11 +136,11 @@ func main() {
 						if err != nil {
 							log.Fatalf("Unable to retrieve data from sheet: %v", err)
 						}
-						botReply := fmt.Sprintf("Approved✅\n\nLatitude: %f\nLongitude: %f\nBranch: %s", location.Latitude, location.Longitude, userMessage)
+						botReply := fmt.Sprintf("Approved✅\n\nLatitude: %f\nLongitude: %f\nBranch: %s\n\n\nThank You %s.", location.Latitude, location.Longitude, userMessage, userFullName)
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, botReply)
 						msg.ReplyToMessageID = update.Message.MessageID
 						bot.Send(msg)
-					} else if isSameUser && !isInEthiopia {
+					} else if (isSameUser && !isInEthiopia) || (isGroupAdmin && !isInEthiopia) {
 						botReply := fmt.Sprintf("%s\n\n%s\n\n%s", chooseLng.wrongLocation.eng, chooseLng.wrongLocation.orm, chooseLng.wrongLocation.amh)
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, botReply)
 						msg.ReplyToMessageID = update.Message.MessageID
