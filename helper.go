@@ -1,12 +1,21 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"google.golang.org/api/sheets/v4"
 )
 
-var validUserNames = []string{"john_merga", "Tintade", "sami_mersha", "gh223223", "benionion", "Yblnr"}
+type PreviousMessage struct {
+	chatID     int64
+	messageID  int
+	UserID     int64
+	Message    *tgbotapi.Message
+	IsLocation bool
+}
 
 type languages struct {
 	eng string
@@ -17,6 +26,7 @@ type LanguageOptions struct {
 	wrongLocation languages
 	wrongTime     languages
 	holyday       languages
+	alreadyExist  languages
 }
 
 // chech location range
@@ -92,16 +102,17 @@ func getLang() *LanguageOptions {
 			orm: "Dhiifama, har'a Locationi erguu hin dandeessan. Maaloo bakka jirtan Isniina hanga Dilbataatti sa'aatii 2:00 AM hanga 1:00 PM gidduutti damee keessan irratti argamuun nuuf qoodaa",
 			amh: "ይቅርታ፣ ዛሬ Location መላክ አትችልም። እባኮትን ከሰኞ እስከ ቅዳሜ ከጠዋቱ 2፡00 እስከ 11፡00 ሰአት ባለው ጊዜ ውስጥ በቅርንጫፍዎ በመገኘት ያካፍሉ።",
 		},
+		alreadyExist: struct {
+			eng string
+			orm string
+			amh string
+		}{
+			eng: "Sorry, this location already exists in the database. you don't need to register it again.",
+			orm: "Dhiifama, bakki kun duraan kuusdeetaa keessa jira. irra deebitee galmeessuun si hin barbaachisu.",
+			amh: "ይቅርታ፣ ይህ አካባቢ አስቀድሞ በመረጃ ቋቱ ውስጥ አለ። እንደገና መመዝገብ አያስፈልግዎትም።",
+		},
 	}
 	return &chooseLng
-}
-func isAdmin(username string) bool {
-	for _, adminUsername := range validUserNames {
-		if username == adminUsername {
-			return true
-		}
-	}
-	return false
 }
 
 // is group admin
@@ -121,4 +132,60 @@ func isGroupAdmin(bot *tgbotapi.BotAPI, chatID int64, userID int64) bool {
 		}
 	}
 	return isAdmin
+}
+
+// set chat previous log
+func setPreviousMessage(p *PreviousMessage, chatID int64, messageID int, userID int64, isLocation bool, tg *tgbotapi.Message) {
+	p.chatID = chatID
+	p.messageID = messageID
+	p.UserID = userID
+	p.IsLocation = isLocation
+	p.Message = tg
+}
+
+// is message location
+func isMessageLocation(update *tgbotapi.Update) bool {
+	if update.Message.Location != nil {
+		return true
+	}
+	return false
+}
+
+// check if the previoius message and the current message is written by the same user
+func isSameUsPrevMsg(prevMsg *PreviousMessage, update *tgbotapi.Update) bool {
+	isMsgText := update.Message.Text != ""
+	if prevMsg.UserID == update.Message.From.ID && isMsgText {
+		return true
+	}
+	return false
+}
+
+// checks if the coordinates already exist in the database
+func isLocationAlreadyExist(location *tgbotapi.Location, spreadsheetId string, srv *sheets.Service) bool {
+	// rng
+	rng := "Sheet1!B:B"
+	coordinates := getCoordinateValues(spreadsheetId, rng, srv)
+	for _, coordinate := range coordinates {
+		if coordinate == fmt.Sprintf("%f,%f", location.Latitude, location.Longitude) {
+			return true
+		}
+	}
+	return false
+
+}
+
+func getCoordinateValues(spreadsheetId, rng string, srv *sheets.Service) []string {
+	resp, err := srv.Spreadsheets.Values.Get(spreadsheetId, rng).Do()
+	if err != nil {
+		log.Fatalf("Unable to retrieve data from sheet: %v", err)
+		return nil
+	}
+	// change to a list of strings
+	var values []string
+	for _, row := range resp.Values {
+		for _, col := range row {
+			values = append(values, fmt.Sprintf("%v", col))
+		}
+	}
+	return values
 }

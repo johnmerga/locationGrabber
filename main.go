@@ -50,12 +50,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	rng := "Sheet1!A1:B2"
+	// the range is the value of column B
+	rng := "Sheet1!B:B"
 
 	resp, err := srv.Spreadsheets.Values.Get(spreadsheetId, rng).Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve data from sheet: %v", err)
 	}
+	coordinates := getCoordinateValues(spreadsheetId, rng, srv)
 
 	if len(resp.Values) > 0 {
 		fmt.Println("Sheet data:")
@@ -75,6 +77,7 @@ func main() {
 	u.Timeout = 60
 
 	updates := bot.GetUpdatesChan(u)
+	var previousMessage PreviousMessage
 
 	for update := range updates {
 		shareLocationBtn := []tgbotapi.KeyboardButton{
@@ -93,9 +96,17 @@ func main() {
 				continue
 			}
 			// chech if the message is Replyied to a message
-			if (update.Message.Chat.Type == "group" || update.Message.Chat.Type == "supergroup") && update.Message.ReplyToMessage != nil {
-				location := update.Message.ReplyToMessage.Location
-				isSameUser := update.Message.From.ID == update.Message.ReplyToMessage.From.ID
+			prvMsg := isSameUsPrevMsg(&previousMessage, &update)
+			if (update.Message.Chat.Type == "group" || update.Message.Chat.Type == "supergroup") && ((update.Message.ReplyToMessage != nil) || (prvMsg)) {
+				var location *tgbotapi.Location
+				var isSameUser bool
+				if prvMsg && (update.Message.ReplyToMessage == nil) {
+					location = previousMessage.Message.Location
+					isSameUser = previousMessage.UserID == update.Message.From.ID
+				} else {
+					location = update.Message.ReplyToMessage.Location
+					isSameUser = update.Message.From.ID == update.Message.ReplyToMessage.From.ID
+				}
 				if location != nil {
 					isInEthiopia := isEthiopia(location)
 					isWorkingHrs, currentTime, err := isWorkingHours()
@@ -126,7 +137,14 @@ func main() {
 						userMessage := update.Message.Text
 						username := update.Message.From.UserName
 						userFullName := fmt.Sprintf("%s %s", update.Message.From.FirstName, update.Message.From.LastName)
-
+						// check if the coordinates already exist in the google sheet
+						if isLocationAlreadyExist(location, spreadsheetId, srv) {
+							botReply := fmt.Sprintf("%s\n\n%s\n\n%s", chooseLng.alreadyExist.eng, chooseLng.alreadyExist.orm, chooseLng.alreadyExist.amh)
+							msg := tgbotapi.NewMessage(update.Message.Chat.ID, botReply)
+							msg.ReplyToMessageID = update.Message.MessageID
+							bot.Send(msg)
+							continue
+						}
 						// add data to sheet
 						var vr sheets.ValueRange
 						mapCoordination := fmt.Sprintf("%f,%f", location.Latitude, location.Longitude)
@@ -140,6 +158,8 @@ func main() {
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, botReply)
 						msg.ReplyToMessageID = update.Message.MessageID
 						bot.Send(msg)
+						// update the coordinates list
+						coordinates = append(coordinates, mapCoordination)
 					} else if (isSameUser && !isInEthiopia) || (isGroupAdmin && !isInEthiopia) {
 						botReply := fmt.Sprintf("%s\n\n%s\n\n%s", chooseLng.wrongLocation.eng, chooseLng.wrongLocation.orm, chooseLng.wrongLocation.amh)
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, botReply)
@@ -148,6 +168,9 @@ func main() {
 					}
 				}
 			}
+
+			isLcation := isMessageLocation(&update)
+			setPreviousMessage(&previousMessage, update.Message.Chat.ID, update.Message.MessageID, update.Message.From.ID, isLcation, update.Message)
 		}
 	}
 }
