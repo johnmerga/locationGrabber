@@ -6,7 +6,7 @@ RUN curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh 
 WORKDIR /go/src/johnmerga/locationGrabber
 COPY go.mod ./
 COPY go.sum ./
-RUN chown -R botuser:botgroup ./
+# RUN chown -R botuser:botgroup ./
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -gcflags "all=-N -l" -o /server
