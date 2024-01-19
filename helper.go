@@ -89,9 +89,9 @@ func getLang() *LanguageOptions {
 			orm string
 			amh string
 		}{
-			eng: "Sorry, You can only send your location between 8:00 AM and 5:00 PM",
-			orm: "Dhiifama, ganama sa'aatii 2:00 hanga galgala sa'aatii 11:00 gidduutti qofa Locationi erguu dandeessu",
-			amh: "ይቅርታ፣ Location መላክ የሚችሉት ከጠዋቱ 2፡00 እስከ ምሽቱ 11፡00 ሰዓት ብቻ ነው።",
+			eng: "Sorry, you can only send Location only by being present at your branch from 8:00 AM to 5:00 PM.",
+			orm: "Dhiifama, Location erguu kan dandeessan ganama sa'aatii 2:00 hanga galgala sa'aatii 11:00tti damee keessan irratti argamuun qofa.",
+			amh: "ይቅርታ፣ Location መላክ የሚችሉት ከጠዋቱ 2፡00 እስከ ምሽቱ 11፡00 በቅርንጫፍዎ በመገኘት ብቻ ነው።",
 		},
 		holyday: struct {
 			eng string
